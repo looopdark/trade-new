@@ -8,11 +8,11 @@ BINANCE_API_SECRET = "lnxSjdwm226VFA6nTjxcIeXWbRslamVU9jKZqY13GjaQsfp05tELghxwa2
 
 # Trading Configuration
 TRADING_PAIRS = [
-    "BTCUSDT",
     "INJUSDT",
     "BNBUSDT",
     "SOLUSDT",
-    "ROSEUSDT"
+    "ROSEUSDT",
+    "XRPUSDT"
 ]
 
 # Risk Management

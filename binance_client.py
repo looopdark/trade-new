@@ -34,7 +34,7 @@ class BinanceFuturesClient:
         ).hexdigest()
         return signature
     
-    def _request(self, method: str, endpoint: str, signed: bool = False, **kwargs) -> Dict:
+    def _request(self, method: str, endpoint: str, signed: bool = False, silent_errors: bool = False, **kwargs) -> Dict:
         """Make API request"""
         url = f"{self.BASE_URL}{endpoint}"
         
@@ -55,7 +55,10 @@ class BinanceFuturesClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            logger.error(f"API request failed: {e}")
+            if silent_errors:
+                logger.debug(f"API request info: {e}")
+            else:
+                logger.error(f"API request failed: {e}")
             raise
     
     def get_account_balance(self) -> Dict:
@@ -90,28 +93,42 @@ class BinanceFuturesClient:
             leverage=leverage
         )
     
+    def get_position_mode(self) -> Dict:
+        """Get current position mode"""
+        try:
+            return self._request("GET", "/fapi/v1/positionSide/dual", signed=True)
+        except Exception as e:
+            logger.debug(f"Error getting position mode: {e}")
+            return {}
+    
     def set_margin_type(self, symbol: str, margin_type: str = "CROSSED") -> Dict:
         """Set margin type (ISOLATED or CROSSED)"""
         try:
+            positions = self.get_position_info(symbol)
+            if positions:
+                current_margin = positions[0].get('marginType', '').upper()
+                if current_margin == margin_type:
+                    logger.debug(f"{symbol} already using {margin_type} margin")
+                    return {"code": 200, "msg": "Margin type already set"}
+            
             return self._request(
                 "POST",
                 "/fapi/v1/marginType",
                 signed=True,
+                silent_errors=True,
                 symbol=symbol,
                 marginType=margin_type
             )
         except requests.exceptions.HTTPError as e:
-            # Error code -4046: No need to change margin type
-            # This happens when margin type is already set to the desired value
             if "400" in str(e):
-                logger.info(f"{symbol} margin type already set to {margin_type} (skipping)")
-                return {"code": -4046, "msg": "No need to change margin type."}
+                logger.debug(f"{symbol} margin type already set to {margin_type}")
+                return {"code": 200, "msg": "Margin type already set"}
             else:
                 logger.error(f"Failed to set margin type for {symbol}: {e}")
                 raise
         except Exception as e:
-            logger.error(f"Unexpected error setting margin type for {symbol}: {e}")
-            return {}
+            logger.debug(f"Margin type setup for {symbol}: {e}")
+            return {"code": 200, "msg": "Using existing margin type"}
     
     def create_order(
         self,

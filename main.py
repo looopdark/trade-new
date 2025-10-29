@@ -92,16 +92,14 @@ class BinanceFuturesBot:
                     leverage_result = self.client.set_leverage(symbol, self.config['LEVERAGE'])
                     logger.info(f"Set {self.config['LEVERAGE']}x leverage for {symbol}")
                     
-                    # Try to set margin type, but don't fail if already set
                     margin_result = self.client.set_margin_type(symbol, "CROSSED")
-                    if margin_result.get('code') == -4046:
-                        logger.debug(f"{symbol} already in CROSSED margin mode")
-                    else:
-                        logger.info(f"Set CROSSED margin for {symbol}")
+                    if margin_result.get('code') == 200:
+                        logger.debug(f"{symbol} margin type configured")
                         
                 except Exception as e:
-                    logger.warning(f"Setup warning for {symbol}: {e}")
-                    logger.info(f"Continuing with default settings for {symbol}")
+                    logger.debug(f"Setup info for {symbol}: {e}")
+                    # Continue with next symbol
+                    continue
             
             logger.info("Bot initialized successfully")
             logger.info(f"Trading pairs: {', '.join(self.config['TRADING_PAIRS'])}")
