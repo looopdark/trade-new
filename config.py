@@ -53,9 +53,10 @@ BOLLINGER_DEVIATION = 2
 ATR_PERIOD = 14
 
 # Strategy Settings
-MIN_SIGNAL_STRENGTH = 60  # Minimum signal strength (0-100) to open position
-SIGNAL_CONFIRMATION_COUNT = 2  # Number of confirmations needed
+MIN_SIGNAL_STRENGTH = 40  # Minimum signal strength (0-100) to open position
+SIGNAL_CONFIRMATION_COUNT = 0  # Number of confirmations needed (0 = disabled)
 
 # Bot Settings
 UPDATE_INTERVAL = 60  # Update interval in seconds
 LOG_LEVEL = "INFO"  # Logging level: DEBUG, INFO, WARNING, ERROR
+</merged_code

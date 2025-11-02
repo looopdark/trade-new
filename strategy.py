@@ -62,27 +62,29 @@ class TradingStrategy:
                         indicators: Dict) -> Dict:
         """Validate and filter trading signals"""
         try:
+            logger.info(f"{symbol}: Validating signal - Direction: {signal['direction']}, Strength: {signal['strength']}")
+            
             # Check signal strength threshold
             min_strength = self.config.get('MIN_SIGNAL_STRENGTH', 60)
             if signal['strength'] < min_strength:
                 signal['direction'] = 'NEUTRAL'
                 signal['valid'] = False
                 signal['rejection_reason'] = f"Signal strength too low ({signal['strength']} < {min_strength})"
+                logger.info(f"{symbol}: Signal rejected - {signal['rejection_reason']}")
                 return signal
             
-            # Check for signal confirmation
-            if not self._check_signal_confirmation(symbol, signal):
-                signal['direction'] = 'NEUTRAL'
-                signal['valid'] = False
-                signal['rejection_reason'] = "Insufficient signal confirmation"
-                return signal
+            confirmation_count = self.config.get('SIGNAL_CONFIRMATION_COUNT', 0)
+            if confirmation_count > 0:
+                if not self._check_signal_confirmation(symbol, signal):
+                    signal['direction'] = 'NEUTRAL'
+                    signal['valid'] = False
+                    signal['rejection_reason'] = "Insufficient signal confirmation"
+                    logger.info(f"{symbol}: Signal rejected - {signal['rejection_reason']}")
+                    return signal
             
-            # Check trend alignment
             if not self._check_trend_alignment(df, indicators, signal['direction']):
-                signal['direction'] = 'NEUTRAL'
-                signal['valid'] = False
-                signal['rejection_reason'] = "Signal against major trend"
-                return signal
+                # Don't reject, just log warning
+                logger.info(f"{symbol}: Warning - Signal against major trend, but allowing")
             
             # Check volatility
             atr = indicators['atr'].iloc[-1]
@@ -93,19 +95,22 @@ class TradingStrategy:
                 signal['direction'] = 'NEUTRAL'
                 signal['valid'] = False
                 signal['rejection_reason'] = f"Volatility too high ({volatility_percent:.2f}%)"
+                logger.info(f"{symbol}: Signal rejected - {signal['rejection_reason']}")
                 return signal
             
-            # Check time since last signal
-            if not self._check_signal_cooldown(symbol):
+            if not self._check_signal_cooldown(symbol, cooldown_minutes=15):
                 signal['direction'] = 'NEUTRAL'
                 signal['valid'] = False
                 signal['rejection_reason'] = "Signal cooldown period active"
+                logger.info(f"{symbol}: Signal rejected - {signal['rejection_reason']}")
                 return signal
             
             # Signal is valid
             signal['valid'] = True
             signal['volatility'] = volatility_percent
             signal['atr'] = atr
+            
+            logger.info(f"{symbol}: Signal VALIDATED - {signal['direction']} with strength {signal['strength']}")
             
             # Calculate entry, stop loss, and take profit levels
             signal = self._calculate_trade_levels(signal, df, indicators)
@@ -122,12 +127,15 @@ class TradingStrategy:
         """Check if signal has enough confirmations"""
         required_confirmations = self.config.get('SIGNAL_CONFIRMATION_COUNT', 2)
         
+        if required_confirmations == 0:
+            return True
+        
         if symbol not in self.signal_history:
-            return False
+            return True
         
         history = self.signal_history[symbol]
         if len(history) < required_confirmations:
-            return False
+            return True
         
         # Check last N signals
         recent_signals = history[-required_confirmations:]

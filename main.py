@@ -142,10 +142,13 @@ class BinanceFuturesBot:
                 signal = self.strategy.analyze_market(symbol, klines)
                 signals[symbol] = signal
                 
-                if signal.get('valid', False):
+                if signal['direction'] != 'NEUTRAL':
                     logger.info(f"{symbol}: {signal['direction']} signal "
-                              f"(strength: {signal['strength']}) - "
+                              f"(strength: {signal['strength']}, valid: {signal.get('valid', False)}) - "
                               f"{', '.join(signal['reasons'][:3])}")
+                    
+                    if not signal.get('valid', False) and 'rejection_reason' in signal:
+                        logger.info(f"{symbol}: Rejection reason - {signal['rejection_reason']}")
                 
             except Exception as e:
                 logger.error(f"Error analyzing {symbol}: {e}")
