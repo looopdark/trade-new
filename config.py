@@ -59,4 +59,3 @@ SIGNAL_CONFIRMATION_COUNT = 0  # Number of confirmations needed (0 = disabled)
 # Bot Settings
 UPDATE_INTERVAL = 60  # Update interval in seconds
 LOG_LEVEL = "INFO"  # Logging level: DEBUG, INFO, WARNING, ERROR
-</merged_code
