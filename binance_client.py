@@ -150,7 +150,8 @@ class BinanceFuturesClient:
         
         if price:
             params["price"] = price
-            params["timeInForce"] = time_in_force
+            if order_type == "LIMIT":
+                params["timeInForce"] = time_in_force
         
         if stop_price:
             params["stopPrice"] = stop_price
